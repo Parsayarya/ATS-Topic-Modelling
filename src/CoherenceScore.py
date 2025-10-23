@@ -87,6 +87,36 @@ def preprocess_text(text: str) -> str:
     lemmatized_text = ' '.join(lemmatized_tokens)
     return lemmatized_text
 
+def compute_coherence_score_npmi(topic_word_matrix, term_doc_matrix, n_top_words=10, eps=1e-12):
+    # Binary doc-term presence
+    X = (term_doc_matrix > 0).astype(int)
+    N = X.shape[0]  # number of documents
+
+    # Document probabilities
+    df = np.array(X.sum(axis=0)).flatten()              # doc freq of each term
+    P = df / (N + eps)
+
+    # Precompute co-doc frequencies via sparse ops
+    # X.T @ X gives co-occurrence counts (including diagonal)
+    C = (X.T @ X).toarray()
+    P12 = C / (N + eps)
+
+    scores = []
+    for topic in topic_word_matrix:
+        top_idx = topic.argsort()[:-n_top_words-1:-1]
+        pair_vals = []
+        for i in range(len(top_idx)):
+            for j in range(i+1, len(top_idx)):
+                a, b = top_idx[i], top_idx[j]
+                p12 = P12[a, b] + eps
+                p1, p2 = P[a] + eps, P[b] + eps
+                pmi = np.log(p12 / (p1 * p2))
+                npmi = pmi / (-np.log(p12))
+                pair_vals.append(npmi)
+        scores.append(np.mean(pair_vals) if pair_vals else 0.0)
+
+    return float(np.mean(scores))
+
 def compute_coherence_score(topic_word_matrix, term_doc_matrix):
     """
     Compute the topic coherence score based on word co-occurrence in documents.
@@ -94,38 +124,39 @@ def compute_coherence_score(topic_word_matrix, term_doc_matrix):
     """
     n_top_words = 10 
     coherence_scores = []
-    
+
     # Get document frequencies for terms
     doc_freq = np.array((term_doc_matrix > 0).sum(axis=0)).flatten()
-    
+
     for topic in topic_word_matrix:
         top_term_indices = topic.argsort()[:-n_top_words-1:-1]
         topic_score = 0
         pairs_count = 0
-        
+
         # Calculate pairwise scores for top terms
         for i in range(len(top_term_indices)):
             for j in range(i + 1, len(top_term_indices)):
                 term1_idx = top_term_indices[i]
                 term2_idx = top_term_indices[j]
-                
+
                 # Get co-document frequency
                 co_doc_freq = np.sum(np.logical_and(term_doc_matrix[:, term1_idx].toarray(), 
                                                   term_doc_matrix[:, term2_idx].toarray()))
-                
-                # Calculate PMI-like score
+
+                # Calculate PMI score
                 if co_doc_freq > 0:
                     score = np.log((co_doc_freq * term_doc_matrix.shape[0]) / 
                                  (doc_freq[term1_idx] * doc_freq[term2_idx]))
                     topic_score += score
                     pairs_count += 1
-        
+
         if pairs_count > 0:
             coherence_scores.append(topic_score / pairs_count)
         else:
             coherence_scores.append(0)
-    
+
     return np.mean(coherence_scores)
+
 
 def evaluate_topic_models(df, text_column, min_topics=50, max_topics=100, step=10):
     """
@@ -135,7 +166,7 @@ def evaluate_topic_models(df, text_column, min_topics=50, max_topics=100, step=1
     extended_stopwords = stopwords.words('english') + SW_list
     count_vectorizer = CountVectorizer(
         max_df=0.7, 
-        min_df=0.005, 
+        min_df=0.0005, 
         stop_words=extended_stopwords
     )
     dtm = count_vectorizer.fit_transform(df[text_column])
@@ -152,14 +183,14 @@ def evaluate_topic_models(df, text_column, min_topics=50, max_topics=100, step=1
             learning_offset=50.,
             random_state=42,
             verbose=1,
-            n_jobs=12,
+            n_jobs=-1,
             max_iter=10,
             doc_topic_prior=0.1,
             topic_word_prior=0.005
         )
         
         lda.fit(dtm)
-        coherence = compute_coherence_score(lda.components_, dtm)
+        coherence = compute_coherence_score_npmi(lda.components_, dtm)
         coherence_scores.append(coherence)
         
         print(f"Coherence score: {coherence}")
@@ -171,7 +202,7 @@ def evaluate_topic_models(df, text_column, min_topics=50, max_topics=100, step=1
     plt.ylabel('Coherence Score')
     plt.title('Topic Coherence Score vs Number of Topics')
     plt.grid(True)
-    plt.savefig('topic_coherence_plot_65T75.png')
+    plt.savefig('topic_coherence_plot_60T80.png')
     plt.close()
     
     # Save results to CSV
@@ -179,13 +210,11 @@ def evaluate_topic_models(df, text_column, min_topics=50, max_topics=100, step=1
         'n_topics': list(n_topics_range),
         'coherence_score': coherence_scores
     })
-    results_df.to_csv('topic_coherence_scores_65T75.csv', index=False)
+    results_df.to_csv('topic_coherence_scores_75T90.csv', index=False)
     
     return results_df
 
-df = pd.read_csv('Data/Input/merged_Corpus_1961-2023.csv')
+df = pd.read_csv('ATCM_IPWP_WithText_PlusScientific.csv', low_memory = False)
 df['text'] = df['text'].apply(lambda x: preprocess_text(x))
 
-results = evaluate_topic_models(df, 'text', min_topics=65, max_topics=75, step=5)
-print("\nResults saved to topic_coherence_scores.csv")
-print("Plot saved as topic_coherence_plot.png")
+results = evaluate_topic_models(df, 'text', min_topics=75, max_topics=90, step=5)
