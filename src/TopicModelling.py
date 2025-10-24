@@ -295,9 +295,9 @@ def LDAV2(df, text_column, n_topics=75, n_top_words=20):
 
 df = pd.read_csv('Data/Input/merged_Corpus_1961-2023.csv')
 df['text'] = df['text'].apply(lambda x: preprocess_text(x))
-df2, topics_df, topic_probs = LDAV2(df, 'text', n_topics=75, n_top_words=25)
+df2, topics_df, topic_probs = LDAV2(df, 'text', n_topics=90, n_top_words=25)
 
 df2.to_csv('Data/Output/refined/75_LDA_Topic_Loading_Score_V2.csv', index=False)
 topics_df.to_csv('Data/Output/refined/75_LDA_Topic_Words_V2.csv', index=False)
 topic_probs.to_csv('Data/Output/refined/75_LDA_Topic_Word_Probabilities_V2.csv', index=False)
-#c----------------------------------------------------------------------------------------------------- TFIDF
+
