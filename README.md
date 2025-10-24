@@ -31,7 +31,7 @@ Monitors LDA model convergence by tracking perplexity and log-likelihood over mu
 
 preprocess_text(text: str) -> str: Cleans and tokenizes text (removing punctuation, special characters, and stopwords, then lemmatizing).
 LDAV1(df, text_column, n_topics=30, n_top_words=25): Demonstrates how to run an LDA model using a specific set of hyperparameters.
-LDAV2(df, text_column, n_topics=75, n_top_words=20): Shows an alternative set of hyperparameters (e.g., different prior settings, different max_iter, etc.).
+LDAV2(df, text_column, n_topics=90, n_top_words=20): Shows an alternative set of hyperparameters (e.g., different prior settings, different max_iter, etc.).
 
 
   * What it does:
@@ -67,7 +67,7 @@ Saves the coherence scores for each topic setting in a CSV.
   * Key functions/classes:
 
 preprocess_text(text: str) -> str: Same as above, cleans textual data.
-monitor_convergence(df, text_column, n_topics=75, learning_offset=50.0, max_iter=3): Trains an LDA model in partial fits, capturing perplexity and log-likelihood after each iteration to observe convergence behavior.
+monitor_convergence(df, text_column, n_topics=90, learning_offset=50.0, max_iter=3): Trains an LDA model in partial fits, capturing perplexity and log-likelihood after each iteration to observe convergence behavior.
 
   * What it does:
 
