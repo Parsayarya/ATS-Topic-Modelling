@@ -67,7 +67,7 @@ Saves the coherence scores for each topic setting in a CSV.
   * Key functions/classes:
 
 preprocess_text(text: str) -> str: Same as above, cleans textual data.
-monitor_convergence(df, text_column, n_topics=90, learning_offset=50.0, max_iter=3): Trains an LDA model in partial fits, capturing perplexity and log-likelihood after each iteration to observe convergence behavior.
+monitor_convergence(df, text_column, n_topics=90, learning_offset=50.0, max_iter=10): Trains an LDA model in partial fits, capturing perplexity and log-likelihood after each iteration to observe convergence behavior.
 
   * What it does:
 
